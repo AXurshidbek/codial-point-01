@@ -19,3 +19,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name',  'start_point', 'amount', 'auction']
     list_filter = ['auction']
     search_fields = ['name']
+
+
+

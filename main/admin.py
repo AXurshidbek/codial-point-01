@@ -31,6 +31,7 @@ class StudentAdmin(admin.ModelAdmin):
     list_filter = ('group',)
     search_fields = ('user__username', 'user__first_name', 'user__last_name')
     ordering = ('-point',)
+    list_editable = ('point',)
 
 
 @admin.register(PointType)

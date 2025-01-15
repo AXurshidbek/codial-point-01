@@ -5,6 +5,11 @@ from rest_framework import generics, permissions
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from .permissions import *
+from .models import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 
 
 class UserDetailView(generics.RetrieveAPIView):
@@ -124,3 +129,19 @@ class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GivePoint.objects.all()
     serializer_class = GivePointSerializer
     permission_classes = [IsAuthenticated]
+
+class NewsListView(generics.ListAPIView):
+    queryset = New.objects.all()
+    serializer_class = NewSerializer
+
+class NewDetailView(generics.RetrieveAPIView):
+    queryset = New.objects.all()
+    serializer_class = NewSerializer
+
+
+class ResetAllStudentsPointsView(APIView):
+    def post(self, request, *args, **kwargs):
+        Student.objects.update(point=0)
+        return Response({'message': 'All students\' points have been reset to 0.'}, status=status.HTTP_200_OK)
+
+

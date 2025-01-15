@@ -2,7 +2,7 @@ from rest_framework.generics import *
 from .serializers import *
 from .models import *
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+from main.models import *
 
 
 class AuctionList(ListAPIView):
@@ -29,4 +29,6 @@ class ProductList(ListAPIView):
     def get_queryset(self):
         auction_id = self.kwargs.get('pk')
         return Product.objects.filter(auction_id=auction_id)
+
+
 

@@ -78,3 +78,11 @@ class GivePointSerializer(serializers.ModelSerializer):
     class Meta:
         model = GivePoint
         fields = '__all__'
+
+
+class NewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = New
+        fields = '__all__'
+
+
