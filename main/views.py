@@ -95,8 +95,14 @@ class StudentDetailView(generics.RetrieveAPIView):
 
 class StudentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Student.objects.all()
-    serializer_class = StudentSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        # Use StudentUpdateSerializer for PUT/PATCH requests
+        if self.request.method in ['PUT', 'PATCH']:
+            return StudentUpdateSerializer
+        # Default to StudentSerializer for other methods like GET, DELETE
+        return StudentSerializer
 
 
 class PointTypeListCreateView(generics.ListCreateAPIView):
