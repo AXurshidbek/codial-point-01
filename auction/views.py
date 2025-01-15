@@ -2,26 +2,49 @@ from rest_framework.generics import *
 from .serializers import *
 from .models import *
 from rest_framework.permissions import IsAuthenticated
-from main.models import *
 
 
-class AuctionList(ListAPIView):
+
+class AuctionListView(ListAPIView):
+    queryset = Auction.objects.all().order_by('date', 'time')
+    serializer_class = AuctionSerializer
+    permission_classes = [IsAuthenticated]
+
+class AuctionCreateView(CreateAPIView):
     queryset = Auction.objects.all()
     serializer_class = AuctionSerializer
     permission_classes = [IsAuthenticated]
 
-class AuctionCreate(CreateAPIView):
-    queryset = Auction.objects.all()
-    serializer_class = AuctionSerializer
-    permission_classes = [IsAuthenticated]
-
-class AuctionDetail(RetrieveAPIView):
+class AuctionDetailView(ListAPIView):
     queryset = Auction.objects.all()
     serializer_class = AuctionSerializer
     permission_classes = [IsAuthenticated]
 
 
-class ProductList(ListAPIView):
+class CurrentAuctionDetailView(RetrieveAPIView):
+    serializer_class = AuctionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Auction.objects.order_by('-date','-time')
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        return queryset.first()
+
+class CurrentAuctionProductsView(ListAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        latest_auction = Auction.objects.order_by('-date', '-time').first()
+        if latest_auction is None:
+            return Product.objects.none()
+
+        return Product.objects.filter(auction=latest_auction)
+
+
+class ProductListView(ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
