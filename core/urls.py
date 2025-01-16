@@ -54,6 +54,7 @@ urlpatterns += [
     path('auctions/<int:pk>/',AuctionDetailView.as_view(),name='auction-detail'),
     path('current-auction/',CurrentAuctionDetailView.as_view(),name='current-auction-detail'),
     path('current-auction/products/',CurrentAuctionProductsView.as_view(),name='current-auction-products'),
+    path('create-product/',CreateProductView.as_view(),name='create-product'),
     path('auctions/<int:pk>/products/',ProductListView.as_view(),name='product-list'),
     path('news/',NewsListView.as_view(),name='news-list'),
     path('news/<int:pk>/',NewDetailView.as_view(),name='news-detail'),

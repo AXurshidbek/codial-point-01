@@ -54,4 +54,7 @@ class ProductListView(ListAPIView):
         return Product.objects.filter(auction_id=auction_id)
 
 
-
+class CreateProductView(CreateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
