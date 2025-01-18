@@ -85,4 +85,8 @@ class NewSerializer(serializers.ModelSerializer):
         model = New
         fields = '__all__'
 
+class NewsReadStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsReadStatus
+        fields = ['id', 'user', 'news', 'is_read']
 

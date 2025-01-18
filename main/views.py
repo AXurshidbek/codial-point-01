@@ -136,6 +136,7 @@ class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GivePointSerializer
     permission_classes = [IsAuthenticated]
 
+
 class NewsListView(generics.ListAPIView):
     queryset = New.objects.all()
     serializer_class = NewSerializer
@@ -151,3 +152,15 @@ class ResetAllStudentsPointsView(APIView):
         return Response({'message': 'All students\' points have been reset to 0.'}, status=status.HTTP_200_OK)
 
 
+class MarkAsReadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, format=None):
+        news = get_object_or_404(New, id=pk)
+        read_status, created = NewsReadStatus.objects.get_or_create(user=request.user, news=news)
+        if not read_status.is_read:
+            read_status.is_read = True
+            read_status.save()
+
+        serializer = NewsReadStatusSerializer(read_status)
+        return Response(serializer.data, status=status.HTTP_200_OK)
