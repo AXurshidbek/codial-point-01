@@ -58,6 +58,9 @@ urlpatterns += [
     path('auctions/<int:pk>/products/',ProductListView.as_view(),name='product-list'),
     path('news/',NewsListView.as_view(),name='news-list'),
     path('news/<int:pk>/',NewDetailView.as_view(),name='news-detail'),
-    path('news/<int:pk>/mark-as-read/', MarkAsReadAPIView.as_view(), name='mark_as_read_api'),
+    path('news/<int:pk>/mark-as-read/', MarkAsReadAPIView.as_view(), name='mark_as_read'),
+    # path('news/mark-as-read/', GetReadStatusAPIView.as_view(), name='mark_as_read_get'),
+    path('news/get-read-status/', AllReadStatusAPIView.as_view(), name='get-read-status'),
     path('reset-points/',ResetAllStudentsPointsView.as_view(), name='reset-points'),
 ]
+

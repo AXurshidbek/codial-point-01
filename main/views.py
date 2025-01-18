@@ -145,7 +145,6 @@ class NewDetailView(generics.RetrieveAPIView):
     queryset = New.objects.all()
     serializer_class = NewSerializer
 
-
 class ResetAllStudentsPointsView(APIView):
     def post(self, request, *args, **kwargs):
         Student.objects.update(point=0)
@@ -164,3 +163,28 @@ class MarkAsReadAPIView(APIView):
 
         serializer = NewsReadStatusSerializer(read_status)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AllReadStatusAPIView(generics.ListAPIView):
+    serializer_class = NewsReadStatusSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return NewsReadStatus.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        # Calculate number of unread news items
+        read_news_ids = queryset.values_list('news_id', flat=True)
+        unread_news_ids = New.objects.exclude(id__in=read_news_ids).values_list('id', flat=True)
+        total_news_count = New.objects.count()
+        read_news_count = queryset.count()
+        num_unread_news = total_news_count - read_news_count
+
+        return Response({
+            'num_unread_news': num_unread_news,
+            'unread_news_ids': list(unread_news_ids),
+            'read_news_ids': serializer.data
+        })
