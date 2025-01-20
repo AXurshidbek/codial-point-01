@@ -63,6 +63,6 @@ urlpatterns += [
     path('news/get-read-status/', AllReadStatusAPIView.as_view(), name='get-read-status'),
     path('reset-points/',ResetAllStudentsPointsView.as_view(), name='reset-points'),
     path('average-points/',CourseAveragePointsListAPIView.as_view(), name='average-points'),
-    path('average-points-02/',CourseAveragePointsAPIView.as_view(), name='average-points'),
+    # path('average-points-02/',CourseAveragePointsAPIView.as_view(), name='average-points'),
 ]
 
