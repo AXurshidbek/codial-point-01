@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 
 
+
 class Course(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -42,6 +43,7 @@ class Student(models.Model):
     point = models.PositiveIntegerField(default=0)
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -123,6 +125,8 @@ class New(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(default=now)
     image = models.ImageField(upload_to='news/', null=True, blank=True)
+    seminary = models.BooleanField(default=False)
+    point=models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title
@@ -134,4 +138,5 @@ class NewsReadStatus(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.news.title} - {'Read' if self.is_read else 'Unread'}"
+
 

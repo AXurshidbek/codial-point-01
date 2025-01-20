@@ -54,7 +54,9 @@ class GivePointAdmin(admin.ModelAdmin):
 
 @admin.register(New)
 class NewsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'created_at')
+    list_display = ('id', 'title', 'created_at','seminary')
     list_display_links = ('id', 'title')
     search_fields = ('title','description')
     list_filter = ('created_at',)
+
+

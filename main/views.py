@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.template.context_processors import request
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework import generics, permissions
@@ -9,6 +10,7 @@ from .models import *
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Avg
 
 
 
@@ -79,9 +81,9 @@ class StudentListCreateView(generics.ListCreateAPIView):
     serializer_class = StudentSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
-    filterset_fields = ['user__username', 'group', 'birth_date']
+    filterset_fields = ['user__username', 'group', 'birth_date','group__mentor']
     ordering_fields = ['id', 'user__username', 'birth_date', 'created_at']
-    search_fields = ['user__username', 'bio']
+    search_fields = ['user_ _username', 'bio']
 
 
 class StudentDetailView(generics.RetrieveAPIView):
@@ -126,9 +128,15 @@ class GivePointListCreateView(generics.ListCreateAPIView):
     serializer_class = GivePointSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
-    filterset_fields = ['mentor', 'student', 'point_type', 'date']
+    filterset_fields = ['mentor', 'student', 'point_type', 'date','student__group']
     ordering_fields = ['id', 'amount', 'date', 'created_at']
     search_fields = ['description']
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return GetPointSerializer
+        return GivePointSerializer
+
 
 
 class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -188,3 +196,63 @@ class AllReadStatusAPIView(generics.ListAPIView):
             'unread_news_ids': list(unread_news_ids),
             'read_news_ids': serializer.data
         })
+
+
+class CourseAveragePointsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        courses = Course.objects.all()
+        result = []
+
+        for course in courses:
+
+            groups = Group.objects.filter(mentor__course=course)
+            students = []
+            for group in groups:
+                students.extend(group.student_set.all())
+
+
+            point_types = PointType.objects.all()
+
+            course_avg_data = {}
+
+            for point_type in point_types:
+
+                give_points = GivePoint.objects.filter(student__in=students, point_type=point_type)
+                avg_points = give_points.aggregate(Avg('amount'))['amount__avg']
+
+                course_avg_data[point_type.name] = avg_points if avg_points is not None else 0
+
+            result.append({
+                course.name: course_avg_data
+            })
+
+        return Response(result, status=status.HTTP_200_OK)
+
+class CourseAveragePointsListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+
+        courses = Course.objects.all()
+        course_avg_points = []
+
+        for course in courses:
+            students = Student.objects.filter(group__mentor__course=course)
+
+            point_types = PointType.objects.all()
+            point_type_avg_data = {}
+
+            for point_type in point_types:
+
+                give_points = GivePoint.objects.filter(student__in=students, point_type=point_type)
+                avg_points = give_points.aggregate(Avg('amount'))['amount__avg']
+
+
+                point_type_avg_data[point_type.name] = avg_points if avg_points is not None else 0
+
+
+            course_avg_points.append({
+                course.name: point_type_avg_data
+            })
+
+        return Response(course_avg_points)

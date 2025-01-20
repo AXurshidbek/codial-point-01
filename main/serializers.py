@@ -75,11 +75,16 @@ class PointTypeSerializer(serializers.ModelSerializer):
 
 
 class GivePointSerializer(serializers.ModelSerializer):
-    student=StudentSerializer()
     class Meta:
         model = GivePoint
         fields = '__all__'
 
+
+class GetPointSerializer(serializers.ModelSerializer):
+    student=StudentSerializer()
+    class Meta:
+        model = GivePoint
+        fields = '__all__'
 
 class NewSerializer(serializers.ModelSerializer):
     class Meta:
