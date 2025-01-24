@@ -87,34 +87,65 @@ class GivePoint(models.Model):
             raise ValidationError(
                 f"Mentor {self.mentor.user.username} does not have enough point_limit (available: {self.mentor.point_limit}).")
 
-    def save(self, *args, **kwargs):
-        self.clean()
+    # def save(self, *args, **kwargs):
+    #     self.clean()
+    #
+    #     # Handle updating old data if this is an update
+    #     if self.pk:
+    #         prev_instance = GivePoint.objects.get(pk=self.pk)
+    #         prev_student = prev_instance.student
+    #         prev_mentor = prev_instance.mentor
+    #         prev_amount = prev_instance.amount
+    #
+    #         # Revert previous points
+    #         if prev_student:
+    #             prev_student.point -= prev_amount
+    #             prev_student.save()
+    #
+    #         if prev_mentor:
+    #             prev_mentor.point_limit += prev_amount
+    #             prev_mentor.save()
+    #
+    #     # Save new instance
+    #     super().save(*args, **kwargs)
+    #
+    #     # Update student points
+    #     if self.student:
+    #         self.student.point += self.amount
+    #         self.student.save()
+    #
+    #     # Update mentor point limit
+    #     if self.mentor:
+    #         self.mentor.point_limit -= self.amount
+    #         self.mentor.save()
 
+    def save(self, *args, **kwargs):
         # Handle updating old data if this is an update
         if self.pk:
-            prev_instance = GivePoint.objects.get(pk=self.pk)
-            prev_student = prev_instance.student
-            prev_mentor = prev_instance.mentor
-            prev_amount = prev_instance.amount
+            prev_instance = GivePoint.objects.select_related('student', 'mentor').get(pk=self.pk)
 
-            # Revert previous points
-            if prev_student:
-                prev_student.point -= prev_amount
-                prev_student.save()
+            # Revert points from the previous student
+            if prev_instance.student:
+                prev_instance.student.point -= prev_instance.amount
+                prev_instance.student.save()
 
-            if prev_mentor:
-                prev_mentor.point_limit += prev_amount
-                prev_mentor.save()
+            # Revert previous mentor point limit
+            if prev_instance.mentor:
+                prev_instance.mentor.point_limit += prev_instance.amount
+                prev_instance.mentor.save()
 
-        # Save new instance
+            # Delete the old instance (optional, if you want to remove it before saving the new one)
+            prev_instance.delete()
+
+        # Save the new or updated instance
         super().save(*args, **kwargs)
 
-        # Update student points
+        # Apply new points to the current student
         if self.student:
             self.student.point += self.amount
             self.student.save()
-
-        # Update mentor point limit
+        #
+        # # Deduct points from the current mentor's limit
         if self.mentor:
             self.mentor.point_limit -= self.amount
             self.mentor.save()

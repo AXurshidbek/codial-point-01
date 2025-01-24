@@ -144,6 +144,48 @@ class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GivePointSerializer
     permission_classes = [IsAuthenticated]
 
+# class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = GivePoint.objects.all()
+#     serializer_class = GivePointSerializer
+#     permission_classes = [IsAuthenticated]
+#     def update(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         serializer = self.get_serializer(instance, data=request.data, partial=True)
+#
+#         if serializer.is_valid():
+#             # Handle reverting points for previous student and mentor before saving new data
+#             prev_student = instance.student
+#             prev_mentor = instance.mentor
+#             prev_amount = instance.amount
+#
+#             # Revert points from the previous student
+#             if prev_student:
+#                 prev_student.point -= prev_amount
+#                 prev_student.save()
+#
+#             # Revert previous mentor point limit
+#             if prev_mentor:
+#                 prev_mentor.point_limit += prev_amount
+#                 prev_mentor.save()
+#
+#             # Save the new values
+#             self.perform_update(serializer)
+#
+#             # Apply new points to the current student
+#             new_student = serializer.validated_data.get('student', None)
+#             if new_student:
+#                 new_student.point += serializer.validated_data['amount']
+#                 new_student.save()
+#
+#             # Deduct points from the current mentor's limit
+#             new_mentor = serializer.validated_data.get('mentor', None)
+#             if new_mentor:
+#                 new_mentor.point_limit -= serializer.validated_data['amount']
+#                 new_mentor.save()
+#
+#             return Response(serializer.data)
+#
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class NewsListView(generics.ListAPIView):
     queryset = New.objects.all()
