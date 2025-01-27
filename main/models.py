@@ -124,26 +124,31 @@ class GivePoint(models.Model):
         if self.pk:
             prev_instance = GivePoint.objects.select_related('student', 'mentor').get(pk=self.pk)
 
+
             # Revert points from the previous student
             if prev_instance.student:
-                prev_instance.student.point -= prev_instance.amount
-                prev_instance.student.save()
+                self.student.point -= prev_instance.amount
+                self.student.save()
 
             # Revert previous mentor point limit
             if prev_instance.mentor:
-                prev_instance.mentor.point_limit += prev_instance.amount
-                prev_instance.mentor.save()
+                self.mentor.point_limit += prev_instance.amount
+                self.mentor.save()
+
 
             # Delete the old instance (optional, if you want to remove it before saving the new one)
-            prev_instance.delete()
+            # prev_instance.delete()
 
         # Save the new or updated instance
         super().save(*args, **kwargs)
 
+
         # Apply new points to the current student
         if self.student:
+
             self.student.point += self.amount
             self.student.save()
+
         #
         # # Deduct points from the current mentor's limit
         if self.mentor:
