@@ -65,7 +65,7 @@ class StudentSerializer(serializers.ModelSerializer):
 class StudentUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ['birth_date', 'image', 'bio']  # Student'lar faqat shularni o'zgartira oladi
+        fields = ['birth_date', 'image', 'bio','phone_number']  # Student'lar faqat shularni o'zgartira oladi
 
 
 class PointTypeSerializer(serializers.ModelSerializer):
