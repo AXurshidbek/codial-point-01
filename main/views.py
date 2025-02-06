@@ -253,3 +253,5 @@ class CourseAveragePointsListAPIView(APIView):
             })
 
         return Response(course_avg_points)
+
+

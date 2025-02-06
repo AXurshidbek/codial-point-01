@@ -80,6 +80,7 @@ class GivePointSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class GetPointSerializer(serializers.ModelSerializer):
     student=StudentSerializer()
     class Meta:
