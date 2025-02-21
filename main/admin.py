@@ -43,8 +43,8 @@ class PointTypeAdmin(admin.ModelAdmin):
 
 @admin.register(GivePoint)
 class GivePointAdmin(admin.ModelAdmin):
-    list_display = ('id', 'mentor', 'student', 'amount', 'point_type', 'description', 'date')
-    list_display_links = ('id', 'mentor', 'student')
+    list_display = ('id', 'mentor', 'student__user__username', 'amount', 'point_type', 'description', 'date')
+    list_display_links = ('id', 'mentor', 'student__user__username')
     list_filter = ('mentor', 'student', 'point_type', 'date')
     search_fields = (
         'student__user__username', 'student__user__first_name', 'student__user__last_name',
