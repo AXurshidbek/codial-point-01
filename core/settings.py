@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'main.apps.MainConfig',
 
     'auction',
+    'second',
 
     'rest_framework',
     'rest_framework_simplejwt',

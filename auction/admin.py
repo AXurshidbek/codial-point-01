@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Auction, Product
+from .models import Auction, Product, SoldProduct
+
 
 class ProductInline(admin.TabularInline):
     model = Product
@@ -20,5 +21,9 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['auction']
     search_fields = ['name']
 
-
+@admin.register(SoldProduct)
+class SoldProductAdmin(admin.ModelAdmin):
+    list_display = ['product', 'buyer__user__first_name', 'price', 'date']
+    list_filter = ['date']
+    search_fields = ['product__name', 'buyer__user__username']
 
