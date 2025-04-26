@@ -1,9 +1,11 @@
 from django.shortcuts import get_object_or_404
-from django.template.context_processors import request
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework import generics, permissions
 from rest_framework.permissions import IsAuthenticated
+
 from .serializers import *
 from .permissions import *
 from .models import *
@@ -11,8 +13,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Avg
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
+
+class CustomPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
+class CustomLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 5
+    limit_query_param = 'limit'
+    offset_query_param = 'offset'
+    max_limit = 100
 
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
@@ -131,6 +145,19 @@ class GivePointListCreateView(generics.ListCreateAPIView):
     filterset_fields = ['mentor', 'student', 'point_type', 'date','student__group']
     ordering_fields = ['id', 'amount', 'date', 'created_at']
     search_fields = ['description']
+    pagination_class=CustomLimitOffsetPagination
+
+
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('offset', openapi.IN_QUERY, description="The initial index to start returning results from", type=openapi.TYPE_INTEGER),
+        ],
+        responses={200: GivePointSerializer(many=True)}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
