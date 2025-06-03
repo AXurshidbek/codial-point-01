@@ -50,6 +50,7 @@ urlpatterns += [
     path('point-types/<int:pk>/', PointTypeRetrieveUpdateDestroyView.as_view()),
     path('give-points/', GivePointListCreateView.as_view(), name='give_points'),
     path('give-points/<int:pk>/', GivePointRetrieveUpdateDestroyView.as_view()),
+    path('given-points/', GivenPointListView.as_view(), name='given_points'),
     path('auctions/',AuctionListView.as_view(),name='auction-list'),
     path('auction_create/',AuctionCreateView.as_view(),name='auction-create'),
     path('auctions/<int:pk>/',AuctionDetailView.as_view(),name='auction-detail'),

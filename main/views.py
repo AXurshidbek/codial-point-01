@@ -5,6 +5,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework import generics, permissions
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum, Count, F
+from django.db.models.functions import Coalesce
+
+from django.db.models import Avg, FloatField
 
 from .serializers import *
 from .permissions import *
@@ -96,8 +100,42 @@ class StudentListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_fields = ['user__username', 'group', 'birth_date','group__mentor']
-    ordering_fields = ['id', 'user__username', 'birth_date', 'created_at']
-    search_fields = ['user_ _username', 'bio']
+    ordering_fields = ['id', 'user__username', 'birth_date', 'created_at','point','group','group__mentor' ,'-point','created_at' ]
+    search_fields = ['user__username','user__first_name','user__last_name', 'bio']
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return",
+                              type=openapi.TYPE_INTEGER),
+            openapi.Parameter('offset', openapi.IN_QUERY,
+                              description="The initial index to start returning results from",
+                              type=openapi.TYPE_INTEGER),
+            openapi.Parameter(
+                'ordering',
+                openapi.IN_QUERY,
+                description="Tartiblash mezoni (masalan: user__username, group , birth_date , group__mentor, group, -point, 'point)",
+                type=openapi.TYPE_STRING,
+                format='string'
+            ),
+            openapi.Parameter(
+                'filtering',
+                openapi.IN_QUERY,
+                description="Filterlash mezoni (masalan: group__mentor=1, group=2, point_type=3,student__group=4)",
+                type=openapi.TYPE_STRING,
+                format='integer'
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Qidirish so'zi (ism yoki bio bo'yicha) (masalan: 'Azizbek')",
+                type=openapi.TYPE_STRING,
+                format='string'
+            )
+        ],
+        responses={200: GivePointSerializer(many=True)}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class StudentDetailView(generics.RetrieveAPIView):
@@ -143,16 +181,50 @@ class GivePointListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_fields = ['mentor', 'student', 'point_type', 'date','student__group']
-    ordering_fields = ['id', 'amount', 'date', 'created_at']
+    ordering_fields = ['id', 'amount','-amount', 'date','-date', 'created_at', 'student__point']
     search_fields = ['description']
     pagination_class=CustomLimitOffsetPagination
-
 
 
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return", type=openapi.TYPE_INTEGER),
             openapi.Parameter('offset', openapi.IN_QUERY, description="The initial index to start returning results from", type=openapi.TYPE_INTEGER),
+            openapi.Parameter(
+                'date_from',
+                openapi.IN_QUERY,
+                description="Boshlanish sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+            openapi.Parameter(
+                'date_to',
+                openapi.IN_QUERY,
+                description="Tugash sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+            openapi.Parameter(
+                'ordering',
+                openapi.IN_QUERY,
+                description="Tartiblash mezoni (masalan: -date, date, -amount,amount, student__point)",
+                type=openapi.TYPE_STRING,
+                format='string'
+            ),
+            openapi.Parameter(
+                'filtering',
+                openapi.IN_QUERY,
+                description="Filterlash mezoni (masalan: mentor=1, student=2, point_type=3,student__group=4)",
+                type=openapi.TYPE_STRING,
+                format='integer'
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Qidirish so'zi (description bo'yicha) (masalan: 'homework', 'exam')",
+                type=openapi.TYPE_STRING,
+                format='string'
+            )
         ],
         responses={200: GivePointSerializer(many=True)}
     )
@@ -164,6 +236,89 @@ class GivePointListCreateView(generics.ListCreateAPIView):
             return GetPointSerializer
         return GivePointSerializer
 
+
+class GivenPointListView(generics.ListAPIView):
+    queryset = GivePoint.objects.all()
+    serializer_class = GetPointSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ['mentor', 'student', 'point_type', 'date', 'student__group']
+    ordering_fields = ['id', 'amount', 'date', 'created_at']
+    search_fields = ['description']
+    pagination_class = CustomLimitOffsetPagination
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('offset', openapi.IN_QUERY, description="The initial index to start returning results from", type=openapi.TYPE_INTEGER),
+            openapi.Parameter(
+                'date_from',
+                openapi.IN_QUERY,
+                description="Boshlanish sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+            openapi.Parameter(
+                'date_to',
+                openapi.IN_QUERY,
+                description="Tugash sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            )
+        ],
+        responses={200: GivePointSerializer(many=True)}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
+        if date_from and date_to:
+            queryset = queryset.filter(date__range=[date_from, date_to])
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        # Umumiy o'rtacha ball
+        average_amount = queryset.aggregate(
+            average=Coalesce(Avg('amount'), 0, output_field=FloatField())
+        )['average']
+
+        # Umumiy miqdor (foizlar uchun)
+        total_amount = queryset.aggregate(
+            total=Coalesce(Sum('amount'), 0, output_field=FloatField())
+        )['total']
+
+        # Point type bo'yicha o'rtacha ball va foiz
+        point_type_stats = (
+            queryset.values('point_type__name')
+            .annotate(
+                amount_avg=Coalesce(Avg('amount'), 0, output_field=FloatField()),
+                amount_sum=Coalesce(Sum('amount'), 0, output_field=FloatField())
+            )
+            .annotate(
+                percentage=Coalesce(
+                    (100.0 * Sum('amount') / total_amount if total_amount else 0),
+                    0,
+                    output_field=FloatField()
+                )
+            )
+            .order_by('point_type__name')
+        )
+
+        # Vaqt oralig'i
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        return Response({
+            'average_amount': average_amount,
+            'point_type_stats': list(point_type_stats),
+            'date_from': date_from,
+            'date_to': date_to
+        })
 class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GivePoint.objects.all()
     serializer_class = GivePointSerializer
