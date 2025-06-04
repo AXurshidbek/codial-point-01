@@ -1,3 +1,5 @@
+from tokenize import group
+
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -337,6 +339,7 @@ class StudentPointsListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
+        queryset=queryset.filter(group__mentor__user=request.user)
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
 
@@ -359,7 +362,6 @@ class StudentPointsListView(generics.ListAPIView):
                 count=Count('id')
             )['count']
 
-            # 1️⃣ point_type bo‘yicha o‘rtacha va count
             point_type_stats = (
                 givepoints
                 .values('point_type__name')
@@ -370,7 +372,6 @@ class StudentPointsListView(generics.ListAPIView):
                 )
             )
 
-            # 2️⃣ umumiy summa (percentage hisoblash uchun)
             total_sum = sum(item['sum'] for item in point_type_stats) or 1
 
             point_type_combined = []
@@ -390,7 +391,6 @@ class StudentPointsListView(generics.ListAPIView):
                 'point_type': point_type_combined
             }
 
-        # Update serialized data
         for item in data:
             student_id = item['id']
             stats = stats_map.get(student_id, {})
