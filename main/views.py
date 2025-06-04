@@ -1,3 +1,4 @@
+from datetime import datetime
 from tokenize import group
 
 from django.shortcuts import get_object_or_404
@@ -322,6 +323,114 @@ class GivenPointListView(generics.ListAPIView):
             'date_to': date_to
         })
 
+# class StudentPointsListView(generics.ListAPIView):
+#     queryset = Student.objects.all()
+#     serializer_class = StudentSerializer
+#     permission_classes = [IsAuthenticated]
+#     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+#     filterset_fields = ['user__username', 'group', 'birth_date', 'group__mentor']
+#     ordering_fields = ['id', 'user__username', 'birth_date', 'created_at', 'point', 'group', 'group__mentor']
+#     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'bio']
+#     pagination_class = CustomLimitOffsetPagination
+#
+#     @swagger_auto_schema(
+#         manual_parameters=[
+#             openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return",
+#                               type=openapi.TYPE_INTEGER),
+#             openapi.Parameter('offset', openapi.IN_QUERY,
+#                               description="The initial index to start returning results from",
+#                               type=openapi.TYPE_INTEGER),
+#             openapi.Parameter(
+#                 'date_from',
+#                 openapi.IN_QUERY,
+#                 description="Boshlanish sanasi (YYYY-MM-DD formatida)",
+#                 type=openapi.TYPE_STRING,
+#                 format='date'
+#             ),
+#             openapi.Parameter(
+#                 'date_to',
+#                 openapi.IN_QUERY,
+#                 description="Tugash sanasi (YYYY-MM-DD formatida)",
+#                 type=openapi.TYPE_STRING,
+#                 format='date'
+#             )
+#         ],
+#         responses={200: GivePointSerializer(many=True)}
+#     )
+#     def get(self, request, *args, **kwargs):
+#         return super().get(request, *args, **kwargs)
+#
+#     def get_queryset(self):
+#         queryset = super().get_queryset()
+#         # queryset = queryset.filter(group=37)
+#         return queryset
+#
+#     def list(self, request, *args, **kwargs):
+#         queryset = self.get_queryset()
+#         # queryset=queryset.filter(group__mentor__user=request.user)
+#         start_date = request.query_params.get('start_date')
+#         end_date = request.query_params.get('end_date')
+#
+#         serializer = self.get_serializer(queryset, many=True)
+#         data = serializer.data
+#
+#         stats_map = {}
+#         for student in queryset:
+#             givepoints = GivePoint.objects.filter(student=student)
+#             if start_date:
+#                 givepoints = givepoints.filter(date__gte=start_date)
+#             if end_date:
+#                 givepoints = givepoints.filter(date__lte=end_date)
+#
+#             total_points = givepoints.aggregate(
+#                 total=Coalesce(Sum('amount'), 0)
+#             )['total']
+#
+#             give_point_count = givepoints.aggregate(
+#                 count=Count('id')
+#             )['count']
+#
+#             point_type_stats = (
+#                 givepoints
+#                 .values('point_type__name')
+#                 .annotate(
+#                     avg=Avg('amount'),
+#                     count=Count('id'),
+#                     sum=Sum('amount')
+#                 )
+#             )
+#
+#             total_sum = sum(item['sum'] for item in point_type_stats) or 1
+#
+#             point_type_combined = []
+#             for item in point_type_stats:
+#                 percentage = round((item['sum'] / total_sum) * 100, 2)
+#                 point_type_combined.append({
+#                     'point_type__name': item['point_type__name'],
+#                     'total': item['sum'],
+#                     'avg': item['avg'],
+#                     'percentage': percentage,
+#                     'count': item['count']
+#                 })
+#
+#             stats_map[student.id] = {
+#                 'total_points': total_points,
+#                 'give_point_count': give_point_count,
+#                 'point_type': point_type_combined
+#             }
+#
+#         for item in data:
+#             student_id = item['id']
+#             stats = stats_map.get(student_id, {})
+#             item.update({
+#                 'total_points': stats.get('total_points', 0),
+#                 'give_point_count': stats.get('give_point_count', 0),
+#                 'point_type': stats.get('point_type', [])
+#             })
+#
+#         return Response(data)
+
+
 class StudentPointsListView(generics.ListAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
@@ -332,16 +441,60 @@ class StudentPointsListView(generics.ListAPIView):
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'bio']
     pagination_class = CustomLimitOffsetPagination
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('limit', openapi.IN_QUERY, description="How many results to return",
+                              type=openapi.TYPE_INTEGER),
+            openapi.Parameter('offset', openapi.IN_QUERY,
+                              description="The initial index to start returning results from",
+                              type=openapi.TYPE_INTEGER),
+            openapi.Parameter(
+                'start_date',
+                openapi.IN_QUERY,
+                description="Boshlanish sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+            openapi.Parameter(
+                'end_date',
+                openapi.IN_QUERY,
+                description="Tugash sanasi (YYYY-MM-DD formatida)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            )
+        ],
+        responses={200: GivePointSerializer(many=True)}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
+
         queryset = super().get_queryset()
-        queryset = queryset.filter(group=37)
-        return queryset
+        user = self.request.user
+        if hasattr(user, 'mentor'):
+            queryset = queryset.filter(group__mentor=user.mentor)
+            return queryset
+        return []
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        queryset=queryset.filter(group__mentor__user=request.user)
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
+
+        from datetime import datetime
+
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            except ValueError:
+                start_date = None
+
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                end_date = None
 
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
@@ -391,6 +544,7 @@ class StudentPointsListView(generics.ListAPIView):
                 'point_type': point_type_combined
             }
 
+        total_items = queryset.count()
         for item in data:
             student_id = item['id']
             stats = stats_map.get(student_id, {})
@@ -400,7 +554,15 @@ class StudentPointsListView(generics.ListAPIView):
                 'point_type': stats.get('point_type', [])
             })
 
-        return Response(data)
+        response_data = {
+            'total_items': total_items,
+            'start_date': start_date,
+            'end_date': end_date,
+            'results': data
+        }
+
+        return Response(response_data)
+
 
 class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GivePoint.objects.all()
