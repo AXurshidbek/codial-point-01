@@ -319,6 +319,89 @@ class GivenPointListView(generics.ListAPIView):
             'date_from': date_from,
             'date_to': date_to
         })
+
+class StudentPointsListView(generics.ListAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ['user__username', 'group', 'birth_date', 'group__mentor']
+    ordering_fields = ['id', 'user__username', 'birth_date', 'created_at', 'point', 'group', 'group__mentor']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'bio']
+    pagination_class = CustomLimitOffsetPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = queryset.filter(group=37)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+
+        stats_map = {}
+        for student in queryset:
+            givepoints = GivePoint.objects.filter(student=student)
+            if start_date:
+                givepoints = givepoints.filter(date__gte=start_date)
+            if end_date:
+                givepoints = givepoints.filter(date__lte=end_date)
+
+            total_points = givepoints.aggregate(
+                total=Coalesce(Sum('amount'), 0)
+            )['total']
+
+            give_point_count = givepoints.aggregate(
+                count=Count('id')
+            )['count']
+
+            # 1️⃣ point_type bo‘yicha o‘rtacha va count
+            point_type_stats = (
+                givepoints
+                .values('point_type__name')
+                .annotate(
+                    avg=Avg('amount'),
+                    count=Count('id'),
+                    sum=Sum('amount')
+                )
+            )
+
+            # 2️⃣ umumiy summa (percentage hisoblash uchun)
+            total_sum = sum(item['sum'] for item in point_type_stats) or 1
+
+            point_type_combined = []
+            for item in point_type_stats:
+                percentage = round((item['sum'] / total_sum) * 100, 2)
+                point_type_combined.append({
+                    'point_type__name': item['point_type__name'],
+                    'total': item['sum'],
+                    'avg': item['avg'],
+                    'percentage': percentage,
+                    'count': item['count']
+                })
+
+            stats_map[student.id] = {
+                'total_points': total_points,
+                'give_point_count': give_point_count,
+                'point_type': point_type_combined
+            }
+
+        # Update serialized data
+        for item in data:
+            student_id = item['id']
+            stats = stats_map.get(student_id, {})
+            item.update({
+                'total_points': stats.get('total_points', 0),
+                'give_point_count': stats.get('give_point_count', 0),
+                'point_type': stats.get('point_type', [])
+            })
+
+        return Response(data)
+
 class GivePointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = GivePoint.objects.all()
     serializer_class = GivePointSerializer
