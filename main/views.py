@@ -475,7 +475,7 @@ class StudentPointsListView(generics.ListAPIView):
         if hasattr(user, 'mentor'):
             queryset = queryset.filter(group__mentor=user.mentor)
             return queryset
-        return []
+        return queryset.none()
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
