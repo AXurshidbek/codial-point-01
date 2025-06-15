@@ -549,6 +549,7 @@ class StudentPointsListView(generics.ListAPIView):
             student_id = item['id']
             stats = stats_map.get(student_id, {})
             item.update({
+                'current_point': item.get('point', 0),
                 'total_points': stats.get('total_points', 0),
                 'give_point_count': stats.get('give_point_count', 0),
                 'point_type': stats.get('point_type', [])
