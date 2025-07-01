@@ -185,6 +185,7 @@ class GivePointListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_fields = ['mentor', 'student', 'point_type', 'date','student__group']
     ordering_fields = ['id', 'amount','-amount', 'date','-date', 'created_at', 'student__point']
+    ordering=['-created_at']
     search_fields = ['description']
     pagination_class=CustomLimitOffsetPagination
 
